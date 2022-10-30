@@ -8,74 +8,20 @@ import threading
 import hashlib
 import typing
 
-OpenTextModeUpdating = [
-    "r+",
-    "+r",
-    "rt+",
-    "r+t",
-    "+rt",
-    "tr+",
-    "t+r",
-    "+tr",
-    "w+",
-    "+w",
-    "wt+",
-    "w+t",
-    "+wt",
-    "tw+",
-    "t+w",
-    "+tw",
-    "a+",
-    "+a",
-    "at+",
-    "a+t",
-    "+at",
-    "ta+",
-    "t+a",
-    "+ta",
-    "x+",
-    "+x",
-    "xt+",
-    "x+t",
-    "+xt",
-    "tx+",
-    "t+x",
-    "+tx",
-]
+
+OpenTextModeUpdating = ["r+", "+r", "rt+", "r+t", "+rt", "tr+", "t+r", "+tr", "w+", "+w", "wt+", "w+t", "+wt", "tw+", "t+w", "+tw", "a+", "+a", "at+", "a+t", "+at", "ta+", "t+a", "+ta", "x+", "+x", "xt+", "x+t", "+xt", "tx+", "t+x", "+tx"]
 OpenTextModeWriting = ["w", "wt", "tw", "a", "at", "ta", "x", "xt", "tx"]
 OpenTextModeReading = ["r", "rt", "tr", "U", "rU", "Ur", "rtU", "rUt", "Urt", "trU", "tUr", "Utr"]
-OpenTextMode = OpenTextModeUpdating | OpenTextModeWriting | OpenTextModeReading
-OpenBinaryModeUpdating = [
-    "rb+",
-    "r+b",
-    "+rb",
-    "br+",
-    "b+r",
-    "+br",
-    "wb+",
-    "w+b",
-    "+wb",
-    "bw+",
-    "b+w",
-    "+bw",
-    "ab+",
-    "a+b",
-    "+ab",
-    "ba+",
-    "b+a",
-    "+ba",
-    "xb+",
-    "x+b",
-    "+xb",
-    "bx+",
-    "b+x",
-    "+bx",
-]
+OpenTextMode = OpenTextModeUpdating + OpenTextModeWriting + OpenTextModeReading
+
+OpenBinaryModeUpdating = ["rb+", "r+b", "+rb", "br+", "b+r", "+br", "wb+", "w+b", "+wb", "bw+", "b+w", "+bw", "ab+", "a+b", "+ab", "ba+", "b+a", "+ba", "xb+", "x+b", "+xb", "bx+", "b+x", "+bx"]
 OpenBinaryModeWriting = ["wb", "bw", "ab", "ba", "xb", "bx"]
 OpenBinaryModeReading = ["rb", "br", "rbU", "rUb", "Urb", "brU", "bUr", "Ubr"]
-OpenBinaryMode = OpenBinaryModeUpdating | OpenBinaryModeReading | OpenBinaryModeWriting
-OpenImplicitCreateMode = OpenTextModeWriting | OpenTextModeUpdating | OpenBinaryModeWriting | OpenBinaryModeUpdating
-OpenMode = OpenTextMode | OpenBinaryMode
+OpenBinaryMode = OpenBinaryModeUpdating + OpenBinaryModeReading + OpenBinaryModeWriting
+
+OpenImplicitCreateMode = OpenTextModeWriting + OpenTextModeUpdating + OpenBinaryModeWriting + OpenBinaryModeUpdating
+OpenMode = OpenTextMode + OpenBinaryMode
+
 
 class Pindex:
 	"""
@@ -128,7 +74,7 @@ class Pindex:
 		else:
 			return f'{ self.pindex_tree }/{ hash[0:2] }/{ hash[2:4] }/{ hash[4:6] }/{ hash[6:] }'
 	
-	def open(self, name: os.PathLike, mode: OpenMode='r', buffering: int=-1, encoding: str=None, errors: str=None, newline: str=None, closefd: bool=True, opener: typing.Callable[[str, int], int]=None) -> io.TextIOWrapper:
+	def open(self, file: os.PathLike, mode: OpenMode='r', buffering: int=-1, encoding: str=None, errors: str=None, newline: str=None, closefd: bool=True, opener: typing.Callable[[str, int], int]=None) -> io.TextIOWrapper:
 		"""
 		Open file with specified name and arguments matching the same for 
 		'open()' built-in function. If creation mode is `WRITE`, file is 
@@ -137,11 +83,13 @@ class Pindex:
 		Returns raw file pointer same as 'open()' call result.
 		"""
 		
-		if mode in OpenBinaryMode:
-			self.create(name, mkdirs=True, exists_ok=True)
+		if mode in OpenImplicitCreateMode:
+			path = self.create(file, mkdirs=True, exists_ok=True)
+		else:
+			path = self._makepath(file)
 		
 		return open(
-			name=name,
+			file=path,
 			mode=mode,
 			buffering=buffering,
 			encoding=encoding,
